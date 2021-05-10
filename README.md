@@ -1,4 +1,4 @@
-## Welcome to GitHub Pages
+## Welcome to Green Energy and Conflicts India
 
 You can use the [editor on GitHub](https://github.com/suhairkilliyath/Green-Energy-and-Conflicts-India/edit/main/README.md) to maintain and preview the content for your website in Markdown files.
 
