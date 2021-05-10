@@ -1,19 +1,19 @@
 ## Welcome to Green Energy and Conflicts India
 
-You can use the [editor on GitHub](https://github.com/suhairkilliyath/Green-Energy-and-Conflicts-India/edit/main/README.md) to maintain and preview the content for your website in Markdown files.
+India has ambitious plans for transitioning into a gree energy future. This tool will track all the green energy projects in India either in the public sector or private sector across states. The tool will show spatial distribution of projects across the country, investments made or propsed, production capacity, company information, and any conflicts or litigations around the projects. 
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+All the data will be publicly sourced and made available on our [GitHub page](https://github.com/suhairkilliyath/Green-Energy-and-Conflicts-India/edit/main/README.md) to enable free and transparent access.
 
-### Markdown
+Please contact [Github/suhairkilliyath] if you want to collaborate
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+### Features
 
-```markdown
-Syntax highlighted code block
+We aim to have the following features in the tool:
 
-# Header 1
-## Header 2
-### Header 3
+
+# Spatial Distribution of Projects
+# Green Energy Financing Tracker
+# Litigations and Conflict Tracker 
 
 - Bulleted
 - List
