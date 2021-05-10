@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>GDP Cities 2015-2016</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.46.0/mapbox-gl.js'></script>
+    <script src='https://npmcdn.com/@turf/turf/turf.min.js'></script>
+    <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.2.0/mapbox-gl-geocoder.min.js'></script>
+    <script src='js/dom.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.46.0/mapbox-gl.css' rel='stylesheet'/>
+    <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v2.2.0/mapbox-gl-geocoder.css' type='text/css' />
+    <link href="css/nouislider.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link href='css/styles.css' rel='stylesheet', type='text/css'/>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+</head>
+
+<script>
+    if (screen.width < 846) {
+        alert("Warning: The 3D India GDP tool is not optimised for phone or tablet yet. Elements in the page might not appear as expected.")
+    }
+</script>
+
+
+<body onresize="resizeControls()">
+        <div id='info' class='w3-modal'>
+        <div class="w3-modal-content w3-animate-top w3-card-4">
+            <span onclick="document.getElementById('info').style.display='none';" 
+                class="w3-button w3-display-topright">&times;</span>
+            <h3>Spatial Distribution of India's GDP</h3>
+            <p>This 3D tool shows how India’s GDP (2015-2016 at constant 2011-2012 prices) is spatially distributed across the country. Each block on the map is a 1km<sup>2</sup> gridded cell of GDP output (see legend for values based on colour). This tool builds on our <a href="http://www.idfcinstitute.org/Webmap/GDP.html" target="_blank">earlier work</a> that showed the spatial distribution of 2006 GDP.</p>
+            <br>
+            <p>In this version, we have introduced two new features:</p>
+            <br>
+            <ul>
+                <li>A <span id='infohint1' style="color:#f48642">Compare States</span> tool which allows the user to view the spatial distribution of economic activity of two states side-by-side. For example a <a href="https://raw.githubusercontent.com/wireman27/india_gdp_new/master/res/comparison.png" target="_blank">comparison</a> between Telangana and Bihar might reveal that economic activity in Bihar is more spread out with a smaller proportion of its GDP attributable to Patna, while in Telangana much of the economic activity is concentrated in Hyderabad. Also interesting to note might be the disparity in the percentage of GDP attributable to agriculture.</li>
+                <li>A map of <span id='infohint2' style="color:#f48642">India’s air links</span> weighted by total weekly passenger capacity on each route. This, when used in conjunction with the GDP layer, could be useful in ascertaining infrastructural needs and opportunities and could also reveal interesting patterns in the movement of people within the country.</li>
+            </ul>
+            <br>
+            <p>The original paper that details the methodology we have used can be found <a href="http://www.ngdc.noaa.gov/eog/pubs/Ghosh_TOGEOGJ.pdf" target="_blank">here</a>. The data we have used can be found <a href="https://github.com/wireman27/india_gdp_new" target="_blank">here</a> and for a quick walkthrough on how all of the data was processed for the GDP layer click <a href="https://wireman27.github.io/india_gdp_new/qgis_docs" target="_blank">here.</a></p>
+            <br>
+            <p>This tool is a work-in-progress. We are working to add more data and layers that we hope will offer more insights, and welcome any feedback and queries at shreyas.thottuvai@idfcinstitute.org</p>
+        </div>
+    </div>
+<div id='container'>
+    <div id="links">
+        <ul id='linklist'class='docs'>
+          <li><a href="https://github.com/wireman27/india_gdp_new" target="_blank">Github</a></li>
+          <li><a href="https://wireman27.github.io/india_gdp_new/qgis_docs" target="_blank">QGIS Walkthrough</a></li>
+          <li><a href="http://www.ngdc.noaa.gov/eog/pubs/Ghosh_TOGEOGJ.pdf" target="_blank">Original Paper</a></li>
+          <li id='infohint1change'><a href=javascript:compareTool() style='color:orange'>Compare States</a></li>
+          <li><a href="https://wireman27.github.io/india_gdp_new/raw_data" target="_blank">Data</a></li>
+          <li>
+            <a href='javascript:toggleInfo()'><img src='res/info5.svg' width='19px' height=19px> About</a>
+        </li>
+        </ul>
+    </div>
+
+    <div id='control-toggle' onclick='toggleControls()'></div>
+
+    <div id='controls'>
+        <div id='controls-headers'>
+            <ul id='controls-headers'>
+                <li id='controls-layers' onclick=selectControlsType(this.id) state='selected' style='color:orange'>Layers</li>
+                <li id='controls-filters' onclick=selectControlsType(this.id) state='null'>Filters</li>
+                <li id='controls-legends' onclick=selectControlsType(this.id) state='null'>Legends</li>
+            </ul>
+        </div>
+        <div id='controls-body'>
+            <div id='controls-body-layers' class='controls-body-item'>
+                <ul class='toggle'>
+                    <li id='gdp-data-toggle'>
+                        <input type="checkbox" id="gdp-data"  onclick="toggleLayer(this.id)">
+                        GDP
+                    </li>
+                    <li id='airlinks-toggle'>
+                        <input type="checkbox" id="airlinks"  onclick="toggleLayer(this.id)">
+                        <p class='tooltip'>Airlinks
+                        <span class='tooltiptext'>Air links weighted by total weekly passenger capacity on a given route based on summer schedule <a href='http://dgca.nic.in/dom_flt_schedule/flt_index.htm' target='_blank'>data</a> from the DGCA.</span>
+                        </p>
+                    </li>
+                    <li id='nldi-toggle'>
+                        <input type="checkbox" id="nldi"  onclick="toggleLayer(this.id)">
+                        <p class='tooltip'>NLDI
+                        <span class='tooltiptext'>The Nighlight Development Index is a measure of how evenly light is distributed across populations. The darker the more uneven. Original paper <a href='https://www.researchgate.net/publication/266224607_The_Night_Light_Development_Index_NLDI_A_spatially_explicit_measure_of_human_development_from_satellite_data' target='_blank'>here</a></span>
+                    </li>
+                    <li id='states-boundary-toggle'>
+                        <input type="checkbox" id="states-boundary"  onclick="toggleLayer(this.id)">
+                        State Boundaries
+                    </li>
+                </ul>
+            </div>
+            <div id='controls-body-filters' class='controls-body-item' style='display:none'>
+                <div id='filters' class='controls-dropdown'>
+                    <div id='airlinks-filter-dd' class='filter-sub'>
+                        <h4>Airlinks</h4>
+                        <div id='slider'></div>
+                        <div class='filter-info' id='airlinks-filter'></div>
+                        <div id='airlinks-city'>
+                            <p id='airlinks-city-text' style='color: #999'>All Cities selected</p>
+                            <button id='airlinks-button' type="button" disabled='true' onclick='airlinksListUi()'>&gt;</button>
+                        </div>
+                        <div id='airlinks-list'></div>
+                    </div>
+                    <div id='nldi-filter-dd' class='filter-sub'>
+                        <h4>NLDI</h4>
+                        <div id='slidernldi'></div>
+                        <div class='filter-info' id='nldi-filter'></div>
+                    </div>
+                </div>  
+            </div>
+            <div id='controls-body-legends' class='controls-body-item' style='display:none'>
+                <h6>GDP (INR Million per km<sup>2</sup>)</h3>
+                <div class='my-legend'>
+                    <div class='legend-scale'>
+                        <ul class='legend-labels' style='padding-left:0px;padding-top:0px;'>
+                            <li><span style='background:#262626;'></span>&lt;100</li>
+                            <li><span style='background:#ff9933;'></span>500</li>
+                            <li><span style='background:#ff5050;'></span>1500</li>
+                            <li><span style='background:#660033;'></span>&gt;1500</li>
+                        </ul>
+                    </div>
+                </div>
+                <br>
+                <h6>NLDI</h3>
+                <div class='my-legend'>
+                    <div class='legend-scale'>
+                        <ul class='legend-labels' style='padding-left:0px;padding-top:0px;'>
+                            <li><span style='background:white;'></span>&lt;0.2</li>
+                            <li><span style='background:#ffbf00;'></span>0.4</li>
+                            <li><span style='background:#ff8000;'></span>0.6</li>
+                            <li><span style='background:#ff0000;'></span>0.8</li>
+                            <li><span style='background:#black;'></span>&gt;0.8</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!--end controls-->
+    
+    <div id='allmaps'>
+        <div id='map'></div>
+        <div class = 'comparemaps' id='cmap1'></div>
+        <div class = 'comparemaps' id='cmap2'></div>
+    </div>
+</div>
+
+<script src="js/nouislider.min.js"></script>
+
+
+<script>
+
+// declaring variables
+
+mapboxgl.accessToken = 'pk.eyJ1IjoiY2l0eS13YWxrYWJpbGl0eSIsImEiOiJjamFncnNkODUycHRnMzNuaW14eHE5d24yIn0.0ty0jyl5uuIF4fulta_vjg';
+
+var states_tiles = 'wireman27.dzygdngz';
+var states_layer = 'State_wi2';
+var states_url = 'https://a.tiles.mapbox.com/v4/'+states_tiles+'/{z}/{x}/{y}.mvt?access_token='+mapboxgl.accessToken;
+var gdp_tiles = 'wireman27.33q9yb3c';
+var gdp_layer = 'gdpp_ws';
+var url = 'https://a.tiles.mapbox.com/v4/'+gdp_tiles+'/{z}/{x}/{y}.mvt?access_token='+mapboxgl.accessToken;
+var airlinks_tiles = 'wireman27.1yx55gw1';
+var airlinks_layer = 'airlinks-d6ccl2';
+var airlinks_url = 'https://a.tiles.mapbox.com/v4/'+airlinks_tiles+'/{z}/{x}/{y}.mvt?access_token='+mapboxgl.accessToken;
+var nldi_tiles = 'wireman27.a3uaunln'
+var nldi_layer = 'nldi'
+var nldi_url = 'https://a.tiles.mapbox.com/v4/'+nldi_tiles+'/{z}/{x}/{y}.mvt?access_token='+mapboxgl.accessToken;
+
+
+var currentZoom = 5;
+var hoveredStateId =  null;
+var bounds = [
+    [48.22214724308444,5.167155470801902],
+    [106.30007044563308,41.99115993534974]
+];
+var is_compare_states = false;
+var selectedStates = [];
+var bbox_correct = [-3,-3,3,3];
+var compareAttributes = {
+    "gsdp_mill":"Gross State Domestic Product (INR Million)",
+    "gsdp_sqkm_mill": "GSDP (INR Million) Per Sq Km",
+    "agri_ratio":"GSDP Attributable to Agriculture"
+}
+var table;
+var statesMetadata; 
+var statesMetadataUrl = 'https://raw.githubusercontent.com/wireman27/india_gdp_new/master/json/statesMetadata.json'
+var links = document.getElementsByClassName("docs");
+var slider = document.getElementById('slider');
+var slidernldi = document.getElementById('slidernldi');
+var slideElement = document.getElementById('slider');
+var airportMetadata;
+var airportMetadataUrl = 'json/airportMetadata.json';
+var selectedAirlinkCity = null;
+
+
+// mapbox-gl-js functionality
+
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/wireman27/cjjxpgblc4lco2spl206pi2d9',
+    zoom: 4,
+    center: [77.26, 23.17],
+    pitch: 0,
+    bearing: 0.6,
+    minZoom: 3,
+    hash: true,
+    maxBounds: bounds
+});
+
+map.addControl(new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken,
+    country: 'in'
+}));
+
+function addGdp(themap) {
+    themap.addSource("gdp",{
+        "type":"vector",
+        "tiles": [url],
+        "cluster":true
+    });
+}
+
+function addStates(themap) {
+    themap.addSource("states",{
+        "type":"vector",
+        "tiles": [states_url]
+    });
+}
+
+function addAirlinks(themap) {
+    themap.addSource("airlinks",{
+        "type":"vector",
+        "tiles": [airlinks_url]
+    });
+}
+
+function addNldi(themap) {
+    themap.addSource("nldi",{
+        "type":"vector",
+        "tiles":[nldi_url]
+    })
+}
+
+
+function addGdpLayer(themap) {
+    themap.addLayer({
+        "id": "gdp-data",
+        "type": "fill-extrusion",
+        "source": "gdp",
+        "source-layer": gdp_layer,
+        'paint': {
+            'fill-extrusion-color': { 
+                'property': 'gdpp_mill',
+                'type': 'exponential',
+                'stops': [ 
+                [100,'#262626'],
+                [500,'#ff9933'],
+                [1500,'#ff5050'],
+                [4000,'#660033']
+                ]
+            },
+            'fill-extrusion-height': ["*",["get","gdpp_mill"], 10],
+            'fill-extrusion-opacity': 0.6
+        }
+    });
+}
+
+function addStatesLayer(themap) {
+    themap.addLayer({
+        "id":"states",
+        "type":"fill",
+        "source": "states",
+        "layout": {},
+        "source-layer":states_layer,
+        "paint": {
+            "fill-color": ["case", ["boolean",["feature-state", "click"],false], "#ffffff","#e6e600"],
+            "fill-opacity": ["case",
+                ["any", ["boolean", ["feature-state", "hover"], false], ["boolean", ["feature-state", "click"], false] ],
+                0.1,
+                0
+            ]
+        }
+    })
+}
+
+function addAirlinksLayer(themap) {
+    themap.addLayer({
+        "id":"airlinks",
+        "type":"line",
+        "source": "airlinks",
+        "layout": {
+            "visibility":'none',
+            "line-cap":"round"
+        },
+        "source-layer":airlinks_layer,
+        "paint": {
+            "line-color": "orange",
+            "line-width":["/",["get", "t"], 10000],
+            "line-opacity": 1
+        }
+    })
+}
+
+function addStatesBoundary(themap) {
+    themap.addLayer({
+        "id":"states-boundary",
+        "type":"line",
+        "source": "states",
+        "layout": {},
+        "source-layer":states_layer,
+        "paint": {
+            "line-width": 0.3,
+            "line-color": "#e6e6e6",
+            "line-opacity": 0.6
+        }
+    })
+}
+
+function addNldiLayer(themap) {
+    themap.addLayer({
+        "id":"nldi",
+        "type":"fill",
+        "source":"nldi",
+        "layout":{
+            "visibility":'none'
+        },
+        "source-layer":nldi_layer,
+        "paint": {
+            "fill-color":{
+                'property':'final_gini',
+                'type':'exponential',
+                'stops': [
+                [0.2,'white'],
+                [0.4,'#ffbf00'],
+                [0.6,'#ff8000'],
+                [0.8,'#ff0000'],
+                [1,'black']
+                ]
+            },
+            'fill-opacity':0.2
+        }
+    })
+}
+
+
+function addDataLayer() {
+    addGdpLayer(map);
+    addStatesLayer(map);
+    addAirlinksLayer(map);
+    addStatesBoundary(map);
+    addNldiLayer(map);
+}
+
+//making the map pretty
+
+map.on('style.load', function () {
+    addGdp(map);
+    addStates(map);
+    addAirlinks(map);
+    addNldi(map);
+    document.getElementById('gdp-data').checked = true;
+    document.getElementById('states-boundary').checked = true;
+    addDataLayer();
+    slider.setAttribute('disabled', true);
+    slidernldi.setAttribute('disabled',true);
+    slider.noUiSlider.on('update', function() {
+        if (selectedAirlinkCity ==  null) {
+            map.setFilter('airlinks',
+            ["all",
+                [">=","t",parseInt(slider.noUiSlider.get()[0])],
+                ["<=","t",parseInt(slider.noUiSlider.get()[1])]
+            ])
+        } else {
+            map.setFilter('airlinks',
+            ["all",
+                [">=","t",parseInt(slider.noUiSlider.get()[0])],
+                ["<=","t",parseInt(slider.noUiSlider.get()[1])],
+                ["any",
+                    ["==","a1",selectedAirlinkCity],
+                    ["==","a2",selectedAirlinkCity]
+                ]
+            ])
+        };
+        if(!slider.attributes['disabled']) {   
+            populateAirlinksFilter();         
+        }
+    });
+    slidernldi.noUiSlider.on('update', function() {
+        if(!slidernldi.attributes['disabled']) {   
+            populateNldiFilter();         
+        }
+        console.log(slidernldi.noUiSlider.get()[0]);
+        console.log(slidernldi.noUiSlider.get()[1]);
+        map.setFilter('nldi',
+        ["all",
+            [">=","final_gini",slidernldi.noUiSlider.get()[0]/100],
+            ["<=","final_gini",slidernldi.noUiSlider.get()[1]/100]
+        ])
+    });
+
+});
+
+
+// compare tool functionality
+
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
+
+const numberWithCommas = (x) => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+};
+
+function stringGenerator(attribute, value) {
+    if (attribute == "gsdp_mill") {
+        return(numberWithCommas(value));       
+    }
+    if (attribute == "agri_ratio") {
+        return(round(value * 100,2).toString() + "%");
+    }
+    if (attribute == "gsdp_sqkm_mill") {
+        return((round(value,2)).toString());
+    } else {
+        return(value);
+    }
+}
+
+function backToHome() {
+	backToHomeUI();
+	for (var feat = 0;feat < selectedStates.length;feat++) {
+		map.setFeatureState({source: 'states', sourceLayer: states_layer, id: selectedStates[feat].id},{click: false})
+	}
+	selectedStates = [];
+	is_compare_states = false;
+
+    map.jumpTo({
+        zoom: 4,
+        center: [77.26, 23.17],
+        pitch: 0,
+        bearing: 0.6,
+        minZoom: 3
+    })
+}
+
+function compareTool() {
+
+    is_compare_states = true;
+
+    if(!statesMetadata) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+       // Typical action to be performed when the document is ready:
+                statesMetadata = JSON.parse(xhttp.responseText)
+            }
+        };
+        xhttp.open("GET",statesMetadataUrl,true);
+        xhttp.send();
+    }
+
+    compareToolUI();
+}
+
+function createBounds(turf_bounds) {
+    var sum = turf_bounds.map(function (num, idx) {
+        return num + bbox_correct[idx];
+    })
+    return(sum);
+}
+
+function goBackFromCompare() {
+
+    compareTool();
+
+    cmap1.remove();
+    cmap2.remove();
+
+    map.jumpTo({
+        zoom: 4,
+        center: [77.26, 23.17],
+        pitch: 0,
+        bearing: 0.6,
+        minZoom: 3
+    })
+
+    goBackFromCompareUI();
+}
+
+function compareStates() {
+
+    if(selectedStates.length < 2) {
+        alert("Please select more states!");
+        return;
+    }
+
+    state1 = selectedStates[0]; state2 = selectedStates[1];
+    center1 = turf.center(state1.geometry).geometry.coordinates; center2 = turf.center(state2.geometry).geometry.coordinates;
+    bounds1 = createBounds(turf.bbox(state1)); bounds2 = createBounds(turf.bbox(state2));
+
+    compareStatesUI();
+
+    var cmap1 = new mapboxgl.Map({
+        container: 'cmap1',
+        style: 'mapbox://styles/wireman27/cjjxpgblc4lco2spl206pi2d9',
+        zoom: 5,
+        center: center1,
+        minZoom: 5,
+        maxBounds: bounds1
+    });
+
+    cmap1.on('load', function() {
+        addGdp(cmap1);
+        addGdpLayer(cmap1);
+        addStates(cmap1);
+        addStatesBoundary(cmap1);
+
+
+        var filter1 = ["==","state_id",state1.properties.St_Csus_Cd];
+
+        cmap1.setFilter('states-boundary',["==","St_Csus_Cd",state1.properties.St_Csus_Cd])
+        cmap1.setFilter('gdp-data',filter1);
+        
+    });
+
+    var cmap2 = new mapboxgl.Map({
+        container: 'cmap2',
+        style: 'mapbox://styles/wireman27/cjjxpgblc4lco2spl206pi2d9',
+        zoom: 5,
+        center: center2,
+        minZoom: 5,
+        maxBounds: bounds2
+    });
+
+    cmap2.on('load', function() {
+        addGdp(cmap2);
+        addGdpLayer(cmap2);
+        addStates(cmap2);
+        addStatesBoundary(cmap2);
+
+        var filter2 = ["==","state_id",state2.properties.St_Csus_Cd];
+
+        cmap2.setFilter('states-boundary',["==","St_Csus_Cd",state2.properties.St_Csus_Cd])
+        cmap2.setFilter('gdp-data',filter2);
+    });
+
+    createComparisonTable();
+}
+
+function createComparisonTable() {
+
+    table = document.createElement('table');
+    table.setAttribute('id','compareTable');
+
+    for (var att in compareAttributes) {
+        var row = document.createElement('tr');
+
+        var td1 = document.createElement('td'); var td2 = document.createElement('td'); var td3 = document.createElement('td'); 
+        td1.setAttribute('class','td1');td2.setAttribute('class','td2');td3.setAttribute('class','td3');
+
+        td1.innerText = stringGenerator(att,statesMetadata[selectedStates[0].id][att]);
+        td2.innerText = compareAttributes[att];
+        td3.innerText = stringGenerator(att,statesMetadata[selectedStates[1].id][att]);
+
+        row.appendChild(td1); row.appendChild(td2); row.appendChild(td3);
+
+        table.appendChild(row);
+    }
+
+    document.getElementById('container').appendChild(table);
+
+    document.getElementsByClassName("mapboxgl-ctrl-attrib")[1].style.display = 'none';
+    document.getElementsByClassName("mapboxgl-ctrl-logo")[1].style.display = 'none';
+    document.getElementsByClassName("mapboxgl-ctrl-attrib")[2].style.display = 'none';
+    document.getElementsByClassName("mapboxgl-ctrl-logo")[2].style.display = 'none';
+}
+
+
+// controls functionality
+
+noUiSlider.create(slider, {
+    start: [50000, 161402],
+    connect: true,
+    range: {
+        'min': 0,
+        '30%':20000,
+        '50%':50000,
+        '80%':135000,
+        'max': 320000
+    }
+});
+
+noUiSlider.create(slidernldi, {
+    start: [50, 75],
+    connect: true,
+    range: {
+        'min': 0,
+        'max': 100
+    }
+});
+
+
+function toggleLayer(layerName) {
+    if(map.getLayoutProperty(layerName, 'visibility') == 'none') {
+        if(layerName == 'airlinks') {
+            slider.removeAttribute('disabled')
+            document.getElementById('airlinks-button').removeAttribute('disabled');
+            populateAirlinksFilter();
+            document.getElementById('airlinks-city-text').style.color = 'orange';
+            if(!airportMetadata) {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        airportMetadata = JSON.parse(xhttp.responseText)
+                        genAirports();
+                    }
+                };
+                xhttp.open("GET",airportMetadataUrl,true);
+                xhttp.send();
+            };
+        }
+        if(layerName == 'nldi') {
+            slidernldi.removeAttribute('disabled')
+            populateNldiFilter();
+        }
+        map.setLayoutProperty(layerName,'visibility','visible')
+    } else {
+        if(layerName == 'airlinks') {
+            slider.setAttribute('disabled', true);
+            document.getElementById('airlinks-filter').innerText = '';
+            document.getElementById('airlinks-city-text').style.color = '#999';
+            document.getElementById('airlinks-button').setAttribute('disabled','true');
+            document.getElementById('airlinks-list').style.display = '';
+        }
+        if(layerName == 'nldi') {
+            slidernldi.setAttribute('disabled', true);
+            document.getElementById('nldi-filter').innerText = '';
+        }
+        map.setLayoutProperty(layerName,'visibility','none')
+    }
+}
+
+function toggleControls() {
+    if (document.getElementById('controls').style.display=='none') {
+        document.getElementById('controls').style.display = 'block';
+    } else {
+        document.getElementById('controls').style.display = 'none';
+    }
+}
+
+function populateAirlinksFilter() {
+    document.getElementById('airlinks-filter').innerText= 
+        'Between '+Math.round(slider.noUiSlider.get()[0])+
+        ' & '+Math.round(slider.noUiSlider.get()[1])+
+        ' passengers per week'
+}
+
+function populateNldiFilter() {
+    document.getElementById('nldi-filter').innerText= 
+        'Between '+ (slidernldi.noUiSlider.get()[0] / 100).toFixed(2) +
+        ' & '+ (slidernldi.noUiSlider.get()[1] / 100).toFixed(2)
+}
+
+function genAirports() {
+    var p = document.createElement('p');
+    p.innerHTML = 'All Cities';
+    p.setAttribute('onclick','popAirlinksListCity(this.innerHTML)');
+    document.getElementById("airlinks-list").appendChild(p);
+    for(var i in airportMetadata) {
+        var p = document.createElement('p');
+        p.innerHTML = i;
+        p.setAttribute('onclick','popAirlinksListCity(this.innerHTML)');
+        document.getElementById("airlinks-list").appendChild(p);
+    };
+}
+
+function popAirlinksListCity(city) {
+    document.getElementById("airlinks-city-text").innerText = city + ' selected';
+    if (city=='All Cities') {
+        map.setFilter('airlinks',
+            ["all",
+                [">=","t",parseInt(slider.noUiSlider.get()[0])],
+                ["<=","t",parseInt(slider.noUiSlider.get()[1])]
+            ]
+        )
+        selectedAirlinkCity = null;
+    }
+    else {
+        selectedAirlinkCity = airportMetadata[city]['iata_apt'];
+        map.setFilter('airlinks',
+            ["all",
+                [">=","t",parseInt(slider.noUiSlider.get()[0])],
+                ["<=","t",parseInt(slider.noUiSlider.get()[1])],
+                ["any",
+                    ["==","a1",airportMetadata[city]['iata_apt']],
+                    ["==","a2",airportMetadata[city]['iata_apt']]
+                ]
+            ]
+        )
+    }
+    document.getElementById("airlinks-list").style.display = "";
+}
+
+function toggleInfo() {
+    document.getElementById('info').style.display='block';
+}
+
+// events functionality
+
+document.getElementById('infohint1').onmouseover = function() {
+    document.getElementById('infohint1change').style.border = '3px solid orange'
+}
+
+document.getElementById('infohint1').onmouseleave = function() {
+    document.getElementById('infohint1change').style.border = ''
+}
+
+document.getElementById('infohint2').onmouseover = function() {
+    document.getElementById('airlinks-toggle').style.border = '3px solid orange'
+}
+
+document.getElementById('infohint2').onmouseleave = function() {
+    document.getElementById('airlinks-toggle').style.border = ''
+}
+
+
+
+document.getElementById('links').onmouseenter = function() {
+    element = document.getElementById('linklist');
+    element.style.opacity = 1;
+}
+    
+
+document.getElementById('links').onmouseleave = function() {
+    element = document.getElementById('linklist')
+    var start = null;
+    isMouseEnter = false;
+    element.onmouseenter = function() {
+        isMouseEnter = true;
+    }
+    if(!is_compare_states) {
+        function step(timestamp) {
+            if (!start) start = timestamp;
+            var progress = timestamp - start;
+            element.style.opacity = 1.1 - progress/3000
+            if(isMouseEnter) {
+                element.style.opacity = 1;
+                return;
+            }
+            if (progress < 3000) {
+                window.requestAnimationFrame(step);
+            }
+        }
+    window.requestAnimationFrame(step);
+    document.getElementById('linklist').style.opacity = 0;
+    }
+}
+
+
+slideElement.onmouseover = function(){
+    if(slider.attributes['disabled']){
+        document.getElementById('airlinks-filter').innerText = 'Please enable the Airlinks layer';
+    }
+};
+
+slideElement.onmouseleave = function(){
+    if(slider.attributes['disabled']) {
+        document.getElementById('airlinks-filter').innerText = '';
+    }
+};
+
+slidernldi.onmouseover = function(){
+    if(slidernldi.attributes['disabled']){
+        document.getElementById('nldi-filter').innerText = 'Please enable the NLDI layer';
+    }
+};
+
+slidernldi.onmouseleave = function(){
+    if(slidernldi.attributes['disabled']) {
+        document.getElementById('nldi-filter').innerText = '';
+    }
+};
+
+
+map.on('click','states',function(e) {
+    if (hoveredStateId && !is_compare_states) {
+        var bbox = turf.bbox(e.features[0]);
+        map.fitBounds(bbox);
+    }
+    if (is_compare_states && e.features.length > 0) {
+        var clickStat = map.getFeatureState({source: 'states', sourceLayer: states_layer, id: e.features[0].id}).click
+        if (clickStat != true) {
+            if (selectedStates.length < 2) {
+                map.setFeatureState({source: 'states', sourceLayer: states_layer, id: e.features[0].id},{click: true});
+                selectedStates.push(e.features[0]);
+            } 
+        } else {
+            map.setFeatureState({source: 'states', sourceLayer: states_layer, id: e.features[0].id},{click: false});
+            for(var i=0; i < selectedStates.length; i++) {
+                if(selectedStates[i].id == e.features[0].id) {
+                    selectedStates.splice(i, 1);
+                }
+            }
+        }
+    };
+})
+
+map.on("mousemove", "states", function(e) {
+    if(map.getZoom() > 7) {
+        map.setFeatureState({source: 'states', sourceLayer: states_layer, id: hoveredStateId}, { hover: false});
+    } else {
+    if (e.features.length > 0) {
+        if (hoveredStateId) {
+            map.setFeatureState({source: 'states', sourceLayer: states_layer, id: hoveredStateId}, { hover: false});
+        }
+        hoveredStateId = e.features[0].id;
+        map.setFeatureState({source: 'states', sourceLayer: states_layer, id: hoveredStateId}, { hover: true});
+    }        
+    }
+});
+
+map.on("mouseleave", "states", function() {   
+    if(map.getZoom() > 7) {
+        map.setFeatureState({source: 'states', sourceLayer: states_layer, id: hoveredStateId}, { hover: false});
+    }
+    if (hoveredStateId) {
+        map.setFeatureState({source: 'states', sourceLayer: states_layer, id: hoveredStateId}, { hover: false});
+    }
+    hoveredStateId =  null;
+});
+
+
+// extras
+
+function resizeControls() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    var controlsHeight = document.getElementById('controls').clientHeight;
+    var margin = (height - controlsHeight) / 2;
+    document.getElementById('controls').style.marginTop = margin + 'px';
+    document.getElementById('controls').style.marginBottom = margin + 'px';
+}
+
+resizeControls();
+
+function selectControlsType(type) {
+    selectedDiv = "controls-body-"+type.split("-")[1];
+    divs = document.getElementsByClassName("controls-body-item");
+    for(x=0;x < divs.length;x++) {
+        divs[x].style.display='none'
+    }
+    y = document.getElementById('controls-headers')
+    for(x=0;x<y.children[0].children.length;x++){
+        y.children[0].children[x].style.color = 'white'
+        y.children[0].children[x].setAttribute('state','null');
+    }
+    document.getElementById(type).setAttribute('state','selected')
+    document.getElementById(type).style.color='orange'
+    document.getElementById(selectedDiv).style.display='block';
+}
+
+
+
+
+// map.addControl(new mapboxgl.FullscreenControl());
+
+
+
+
+// map.on('zoomend', function(){
+//     var zoomEnd = map.getZoom();
+//     if(currentZoom < 9.5 && zoomEnd > 9.5) { 
+//         //document.getElementById('loader').style.display = 'block';
+//         map.setStyle('mapbox://styles/mapbox/satellite-v9?optimize=true')
+//         currentZoom = zoomEnd;
+//     }
+//     if(currentZoom > 9.5 && zoomEnd < 9.5) { 
+//         map.setStyle('mapbox://styles/mapbox/dark-v9?optimize=true')
+//         currentZoom = zoomEnd;
+//     }
+// });
+
+</script>
+
+</body>
+</html>
