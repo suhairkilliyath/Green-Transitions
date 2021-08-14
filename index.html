@@ -1,0 +1,17 @@
+<script>
+  //my custom function that creates a hyperlink
+  function format_link(link){
+    if (link)
+      return "<a href='" + link + "' target='_blank'>" + link + "</a>";
+    else
+      return "";
+  }
+
+  CsvToHtmlTable.init({
+    csv_path: 'data/all-projects.csv',
+    element: 'table-container',
+    allow_download: true,
+    csv_options: {separator: ',', delimiter: '"'},
+    datatables_options: {"paging": false}
+  });
+</script>
