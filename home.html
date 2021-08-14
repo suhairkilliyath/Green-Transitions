@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Green Transitions</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='js/dom.js'></script>
+    <link href="css/welcome.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link href='css/style.css' rel='stylesheet', type='text/css'/>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+</head>
+
+<script>
+    if (screen.width < 846) {
+        alert("Warning: The tool is not optimised for phone or tablet yet. Elements in the page might not appear as expected.")
+    }
+</script>
+
+<body onresize="resizeControls()">
+        <div id='info' class='w3-modal'>
+        <div class="w3-modal-content w3-animate-top w3-card-4">
+            <span onclick="document.getElementById('info').style.display='none';"
+                class="w3-button w3-display-topright">&times;</span>
+            <h3>Green Transitions India</h3>
+            <p>This tool shows how India’s ambitious green energy plans as they translate into major investments and projects across the country.India is a forerunner in the production of energy from renewable sources. As of 2020, 38% of India's electricity generation capacity has been produced from renewable sources (136 GW out of 373 GW).</p>
+            <br>
+            <p>Renewable projects are land-intensive, solar, hydro and wind plants all require vast areas to set up energy generating systems.Land acquisitions for solar and wind farms in multiple states have led to conflicts and protests. Local people are concerned over the lack of compensation, forceful land acquisition and loss of livelihoods.</p>
+            <br>
+            <ul>
+                <li> <span id='infohint1' style="color:#f48642">This tool will have the following: <br>1) spatial distribution of projects,<br> 2) Energy financing and investments, and <br>3) Litigation and conflict tracker
+            </ul>
+            <br>
+            <p>This version of the tool has a live green projects tracker which can be accessed <a href="https://suhairkilliyath.github.io/Green-Transitions/" target="_blank">here</a>. Documentation and further details can be found  <a href="https://github.com/suhairkilliyath/Green-Transitions  " target="_blank">here</a>
+            <br>
+            <p>This tool is a work-in-progress. We are working to add more data and layers that we hope will offer more insights, and welcome any feedback and queries at suhairkilliyath@gmail.com</p>
+        </div>
+    </div>
+<div id='container'>
+    <div id="links">
+        <ul id='linklist'class='docs'>
+          <li><a href="https://github.com/suhairkilliyath/Green-Transitions" target="_blank">Github</a></li>
+          <li><a href="https://suhairkilliyath.github.io/Green-Transitions/" target="_blank">Live Green Projects Tracker</a></li>
+          <li>
+            <a href='javascript:toggleInfo()'><img src='res/info5.svg' width='19px' height=19px> About</a>
+        </li>
+        </ul>
+    </div>
+<script src="js/control.js"></script>
+  </body>
+  </html>
