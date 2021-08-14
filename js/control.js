@@ -1,25 +1,9 @@
-function changeListElement(number, text="", link="#",attributeKey="style",attributeValue="",removeHref, innerHtml) {
-	links[0]["children"][number]["children"][0].innerText = text
-	links[0]["children"][number]["children"][0].href = link
-	links[0]["children"][number]["children"][0].setAttribute(attributeKey,attributeValue)
-
-    if(innerHtml) {
-        links[0]["children"][number]["children"][0].innerHTML = innerHtml
-    }
-
-    if(removeHref==true) {
-        links[0]["children"][number]["children"][0].removeAttribute('href');
-    }
-}
-
-
-function backToHomeUI() {
-	changeListElement(0, "Github", "https://github.com/suhairkilliyath/Green-Transitions", "target", "_blank")
-	changeListElement(1, "QGIS Walkthrough", "https://suhairkilliyath.github.io/Green-Transitions/", "target", "_blank")
-	changeListElement(1, "QGIS Walkthrough", "https://suhairkilliyath.github.io/Green-Transitions/", "style", "color:white")
-    changeListElement(5, "","javascript:toggleInfo()",undefined, undefined,undefined,"<img src='res/info5.svg' width='19px' height=19px> About")
-
-	document.getElementsByClassName("mapboxgl-control-container")[0].style.display = 'block';
-
-    document.getElementById('controls').style.display = 'block';
-}
+/*
+ * jQuery hashchange event - v1.2 - 2/11/2010
+ * http://benalman.com/projects/jquery-hashchange-plugin/
+ *
+ * Copyright (c) 2010 "Cowboy" Ben Alman
+ * Dual licensed under the MIT and GPL licenses.
+ * http://benalman.com/about/license/
+ */
+(function($,i,b){var j,k=$.event.special,c="location",d="hashchange",l="href",f=$.browser,g=document.documentMode,h=f.msie&&(g===b||g<8),e="on"+d in i&&!h;function a(m){m=m||i[c][l];return m.replace(/^[^#]*#?(.*)$/,"$1")}$[d+"Delay"]=100;k[d]=$.extend(k[d],{setup:function(){if(e){return false}$(j.start)},teardown:function(){if(e){return false}$(j.stop)}});j=(function(){var m={},r,n,o,q;function p(){o=q=function(s){return s};if(h){n=$('<iframe src="javascript:0"/>').hide().insertAfter("body")[0].contentWindow;q=function(){return a(n.document[c][l])};o=function(u,s){if(u!==s){var t=n.document;t.open().close();t[c].hash="#"+u}};o(a())}}m.start=function(){if(r){return}var t=a();o||p();(function s(){var v=a(),u=q(t);if(v!==t){o(t=v,u);$(i).trigger(d)}else{if(u!==t){i[c][l]=i[c][l].replace(/#.*/,"")+"#"+u}}r=setTimeout(s,$[d+"Delay"])})()};m.stop=function(){if(!n){r&&clearTimeout(r);r=0}};return m})()})(jQuery,this);
