@@ -15,7 +15,7 @@ We aim to have the following features in the tool:
 ### Green Energy Financing Tracker
 ### Litigations and Conflict Tracker
 
-### Support or Contact
+### Contact
 
 
 contact [@suhairkilliyath](https://twitter.com/suhairkilliyath)
